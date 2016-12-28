@@ -50,6 +50,7 @@ while True:
 	startTime = time.perf_counter()
 	log.debug("Starting run")
 
+	proceed = True
 	strList = []
 	try:
 		page = requests.get("http://www.fearshop.com/podcast/this-day-in-horror.asp")
@@ -70,20 +71,24 @@ while True:
 	except Exception as err:
 		log.warning("Exception parsing page")
 		log.warning(traceback.format_exc())
+		proceed = False
 
-	try:
-		resp = requests.get(url="https://www.reddit.com/r/"+SUBREDDIT+"/wiki/sidebar-template.json", headers={'User-Agent': USER_AGENT})
-		jsonData = json.loads(resp.text)
-		baseSidebar = jsonData['data']['content_md']
+	if proceed:
+		try:
+			resp = requests.get(url="https://www.reddit.com/r/"+SUBREDDIT+"/wiki/sidebar-template.json", headers={'User-Agent': USER_AGENT})
+			jsonData = json.loads(resp.text)
+			baseSidebar = jsonData['data']['content_md']
 
-		strList.append(baseSidebar)
-	except Exception as err:
-		log.warning("Exception parsing schedule")
-		log.warning(traceback.format_exc())
+			strList.append(baseSidebar)
+		except Exception as err:
+			log.warning("Exception parsing schedule")
+			log.warning(traceback.format_exc())
+			proceed = False
 
-	if len(strList) > 0:
-		subreddit = r.get_subreddit(SUBREDDIT)
-		subreddit.update_settings(description=''.join(strList))
+	if proceed:
+		if len(strList) > 0:
+			subreddit = r.get_subreddit(SUBREDDIT)
+			subreddit.update_settings(description=''.join(strList))
 
 	log.debug("Run complete after: %d", int(time.perf_counter() - startTime))
 	if once:
