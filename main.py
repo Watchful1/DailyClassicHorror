@@ -10,6 +10,7 @@ import time
 import sys
 import traceback
 import json
+import configparser
 
 ### Config ###
 LOG_FOLDER_NAME = "logs"
@@ -39,12 +40,23 @@ if LOG_FILENAME is not None:
 log.debug("Connecting to reddit")
 
 once = False
-if len(sys.argv) > 1 and sys.argv[1] == 'once':
-	once = True
+user = None
+if len(sys.argv) >= 2:
+	user = sys.argv[1]
+	for arg in sys.argv:
+		if arg == 'once':
+			once = True
+else:
+	log.error("No user specified, aborting")
+	sys.exit(0)
 
-r = praw.Reddit(user_agent=USER_AGENT, log_request=0)
-o = OAuth2Util.OAuth2Util(r)
-o.refresh(force=True)
+try:
+	r = praw.Reddit(
+		user
+		,user_agent=USER_AGENT)
+except configparser.NoSectionError:
+	log.error("User "+user+" not in praw.ini, aborting")
+	sys.exit(0)
 
 while True:
 	startTime = time.perf_counter()
@@ -87,8 +99,8 @@ while True:
 
 	if proceed:
 		if len(strList) > 0:
-			subreddit = r.get_subreddit(SUBREDDIT)
-			subreddit.update_settings(description=''.join(strList))
+			subreddit = r.subreddit(SUBREDDIT)
+			subreddit.mod.update(description=''.join(strList))
 
 	log.debug("Run complete after: %d", int(time.perf_counter() - startTime))
 	if once:
